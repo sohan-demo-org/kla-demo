@@ -19,9 +19,10 @@ forms and a small console that shows everything visitors submitted.
 | **Careers** | Keyword / team / location filters, job detail page with an application form | `GET /api/careers`, `POST /api/careers/:id/applications` |
 | **Newsroom** | Category filters, lead story, article pages | `GET /api/news`, `GET /api/news/:slug` |
 | **Investors** | Headline metrics, interactive quarterly chart (revenue / FCF / gross margin), table, dividend, events | `GET /api/investors` |
+| **Yield Lab** (`/yield-lab`) | Interactive Klarity-style defect analysis on three synthetic lots: yield-by-wafer chart with SPC limits, wafer maps, spatial signature detection (scratch, reticle repeater, edge ring, center cluster), inspection-tool sensitivity, chamber commonality, and persisted excursions | `GET /api/yield/lots`, `GET /api/yield/lots/:id`, `GET /api/yield/lots/:id/wafers/:slot`, `POST`/`PATCH /api/yield/excursions` |
 | **Contact** | Validated contact form (pre-filled from *Request a Demo*), reference number on success | `POST /api/contact` |
 | **Footer** | Newsletter signup (deduplicated) | `POST /api/subscriptions` |
-| **Demo console** (`/admin`) | Counts plus inquiries, applications and subscribers; change an inquiry's status | `GET /api/admin/summary`, `PATCH /api/contact/:id` |
+| **Demo console** (`/admin`) | Counts plus inquiries, applications, subscribers and Yield Lab excursions; change inquiry and excursion status | `GET /api/admin/summary`, `PATCH /api/contact/:id`, `PATCH /api/yield/excursions/:id` |
 
 ## Stack
 

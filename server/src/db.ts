@@ -1,10 +1,11 @@
 import { mkdirSync } from 'node:fs';
 import { dirname } from 'node:path';
 import { DatabaseSync } from 'node:sqlite';
-import type { Application, ContactRequest, InquiryStatus, Subscription } from './types.js';
+import type { Application, ContactRequest, Excursion, ExcursionStatus, InquiryStatus, Subscription } from './types.js';
 
 export type NewContactRequest = Omit<ContactRequest, 'id' | 'status' | 'createdAt'>;
 export type NewApplication = Omit<Application, 'id' | 'createdAt'>;
+export type NewExcursion = Omit<Excursion, 'id' | 'status' | 'createdAt'>;
 
 export interface Store {
   addContactRequest(input: NewContactRequest): ContactRequest;
@@ -14,6 +15,9 @@ export interface Store {
   listApplications(): Application[];
   addSubscription(email: string): { subscription: Subscription; created: boolean };
   listSubscriptions(): Subscription[];
+  addExcursion(input: NewExcursion): Excursion;
+  listExcursions(lotId?: string): Excursion[];
+  updateExcursionStatus(id: number, status: ExcursionStatus): Excursion | undefined;
   close(): void;
 }
 
@@ -42,6 +46,16 @@ const SCHEMA = `
   CREATE TABLE IF NOT EXISTS subscriptions (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     email TEXT NOT NULL UNIQUE,
+    created_at TEXT NOT NULL
+  );
+  CREATE TABLE IF NOT EXISTS excursions (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    lot_id TEXT NOT NULL,
+    slots TEXT NOT NULL,
+    signature TEXT NOT NULL,
+    owner TEXT NOT NULL,
+    note TEXT,
+    status TEXT NOT NULL DEFAULT 'Open',
     created_at TEXT NOT NULL
   );
 `;
@@ -77,6 +91,17 @@ const toSubscription = (r: Row): Subscription => ({
   createdAt: String(r.created_at),
 });
 
+const toExcursion = (r: Row): Excursion => ({
+  id: Number(r.id),
+  lotId: String(r.lot_id),
+  slots: JSON.parse(String(r.slots)) as number[],
+  signature: String(r.signature),
+  owner: String(r.owner),
+  note: r.note === null ? null : String(r.note),
+  status: String(r.status) as ExcursionStatus,
+  createdAt: String(r.created_at),
+});
+
 export function openStore(file: string): Store {
   if (file !== ':memory:') mkdirSync(dirname(file), { recursive: true });
   const db = new DatabaseSync(file);
@@ -85,7 +110,7 @@ export function openStore(file: string): Store {
   const now = () => new Date().toISOString();
   const get = (sql: string, ...params: (string | number | null)[]) =>
     db.prepare(sql).get(...params) as Row | undefined;
-  const all = (sql: string) => db.prepare(sql).all() as Row[];
+  const all = (sql: string, ...params: (string | number | null)[]) => db.prepare(sql).all(...params) as Row[];
 
   return {
     addContactRequest(input) {
@@ -129,6 +154,23 @@ export function openStore(file: string): Store {
     },
     listSubscriptions() {
       return all('SELECT * FROM subscriptions ORDER BY id DESC').map(toSubscription);
+    },
+    addExcursion(input) {
+      const { lastInsertRowid } = db
+        .prepare('INSERT INTO excursions (lot_id, slots, signature, owner, note, created_at) VALUES (?, ?, ?, ?, ?, ?)')
+        .run(input.lotId, JSON.stringify(input.slots), input.signature, input.owner, input.note, now());
+      return toExcursion(get('SELECT * FROM excursions WHERE id = ?', Number(lastInsertRowid))!);
+    },
+    listExcursions(lotId) {
+      const rows = lotId
+        ? all('SELECT * FROM excursions WHERE lot_id = ? ORDER BY id DESC', lotId)
+        : all('SELECT * FROM excursions ORDER BY id DESC');
+      return rows.map(toExcursion);
+    },
+    updateExcursionStatus(id, status) {
+      db.prepare('UPDATE excursions SET status = ? WHERE id = ?').run(status, id);
+      const row = get('SELECT * FROM excursions WHERE id = ?', id);
+      return row ? toExcursion(row) : undefined;
     },
     close() {
       db.close();
