@@ -121,6 +121,19 @@ export interface Subscription {
   createdAt: string;
 }
 
+export type ExcursionStatus = 'Open' | 'Contained' | 'Closed';
+
+export interface Excursion {
+  id: number;
+  lotId: string;
+  slots: number[];
+  signature: string;
+  owner: string;
+  note: string | null;
+  status: ExcursionStatus;
+  createdAt: string;
+}
+
 export interface SearchResult {
   type: 'Product' | 'News' | 'Career' | 'Service';
   title: string;

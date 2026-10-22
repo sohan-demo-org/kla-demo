@@ -16,6 +16,7 @@ import ProductDetail from './pages/ProductDetail';
 import Products from './pages/Products';
 import Search from './pages/Search';
 import Services from './pages/Services';
+import YieldLab from './pages/YieldLab';
 
 function ScrollToTop() {
   const { pathname, hash } = useLocation();
@@ -45,6 +46,7 @@ export default function App() {
           <Route path="/investors" element={<Investors />} />
           <Route path="/contact" element={<Contact />} />
           <Route path="/search" element={<Search />} />
+          <Route path="/yield-lab" element={<YieldLab />} />
           <Route path="/admin" element={<Admin />} />
           <Route path="*" element={<NotFound />} />
         </Routes>

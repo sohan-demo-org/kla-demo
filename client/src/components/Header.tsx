@@ -12,6 +12,7 @@ const productMenu = [
   { label: 'Data Analytics', to: '/products?category=Data%20Analytics' },
   { label: 'Advanced Packaging', to: '/products?category=Packaging' },
   { label: 'PCB & Display', to: '/products?category=PCB%20%26%20Display' },
+  { label: 'Yield Lab (interactive demo)', to: '/yield-lab' },
 ];
 
 const navItems = [
@@ -147,6 +148,9 @@ export default function Header() {
       <div className="bg-kla-purple text-white">
         <div className="container-kla flex h-10 items-center justify-end gap-6 text-[15px]">
           <RegionMenu />
+          <Link to="/yield-lab" className="hidden font-semibold text-kla-sky hover:underline sm:block">
+            Yield Lab
+          </Link>
           <Link to="/services" className="hidden hover:underline sm:block">
             KLA Advance
           </Link>

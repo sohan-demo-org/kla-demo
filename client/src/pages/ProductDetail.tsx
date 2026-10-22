@@ -36,6 +36,11 @@ export default function ProductDetail() {
             <div className="mt-10 flex flex-wrap gap-4">
               <Link to={contactLink} className="btn-primary">Request a Demo</Link>
               <a href="#specs" className="btn-ghost">View Specifications</a>
+              {['klarity', '39xx-broadband-plasma', 'esl10-ebeam'].includes(data.slug) && (
+                <Link to={`/yield-lab${data.slug === 'klarity' ? '' : `?tool=${data.slug === 'esl10-ebeam' ? 'esl10' : '39xx'}`}`} className="btn-ghost">
+                  Try it in the Yield Lab
+                </Link>
+              )}
             </div>
           </div>
           <WaferArt name={data.name} category={data.category} className="h-72 border border-white/10" />

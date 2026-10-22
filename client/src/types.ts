@@ -150,8 +150,124 @@ export interface CompanyPayload {
 }
 
 export interface AdminSummary {
-  counts: { inquiries: number; openInquiries: number; applications: number; subscriptions: number };
+  counts: { inquiries: number; openInquiries: number; applications: number; subscriptions: number; openExcursions: number };
   inquiries: ContactRequest[];
   applications: Application[];
   subscriptions: Subscription[];
+  excursions: Excursion[];
+}
+
+export type SignatureType = 'Scratch' | 'Reticle Repeater' | 'Edge Ring' | 'Center Cluster' | 'Random';
+export type DefectClass = 'Particle' | 'Residue' | 'Pit' | 'Pattern' | 'Scratch';
+export type ExcursionStatus = 'Open' | 'Contained' | 'Closed';
+
+export interface Excursion {
+  id: number;
+  lotId: string;
+  slots: number[];
+  signature: SignatureType;
+  owner: string;
+  note: string | null;
+  status: ExcursionStatus;
+  createdAt: string;
+}
+
+export interface InspectionTool {
+  id: string;
+  name: string;
+  slug: string | null;
+  minSizeNm: number;
+  description: string;
+}
+
+export interface LotMeta {
+  id: string;
+  product: string;
+  layer: string;
+  processTool: string;
+  story: string;
+}
+
+export interface LotRollup {
+  meanYield: number;
+  flagged: number;
+  unexplained: number;
+  signatures: Partial<Record<SignatureType, number>>;
+}
+
+export type LotSummary = LotMeta & LotRollup;
+
+export interface WaferStats {
+  defects: number;
+  totalDefects: number;
+  killers: number;
+  capturedKillers: number;
+  missedKillers: number;
+  killerCaptureRate: number;
+  yield: number;
+  poissonYield: number;
+  d0: number;
+  goodDies: number;
+  totalDies: number;
+}
+
+export interface WaferSummary extends WaferStats {
+  slot: number;
+  chamber: string;
+  signature: SignatureType;
+  confidence: number;
+  yieldAlarm: boolean;
+  countAlarm: boolean;
+  flagged: boolean;
+}
+
+export interface ControlLimits {
+  center: number;
+  sigma: number;
+  lower: number;
+  upper: number;
+}
+
+export interface LotDetail extends LotMeta {
+  minSizeNm: number;
+  wafers: WaferSummary[];
+  limits: { yield: ControlLimits; defects: ControlLimits };
+  chambers: { chamber: string; wafers: number; meanYield: number; flagged: number; signatures: Partial<Record<SignatureType, number>> }[];
+  commonality: { chamber: string; gap: number } | null;
+  pareto: Partial<Record<DefectClass, number>>;
+  summary: LotRollup;
+  excursions: Excursion[];
+}
+
+export interface WaferDefect {
+  id: number;
+  x: number;
+  y: number;
+  sizeNm: number;
+  cls: DefectClass;
+  killer: boolean;
+  captured: boolean;
+}
+
+export interface WaferSignature {
+  type: SignatureType;
+  confidence: number;
+  memberIds: number[];
+  evidence: string;
+  rootCause: string;
+  action: string;
+  product: { slug: string; name: string } | null;
+}
+
+export interface WaferDetail {
+  lot: LotMeta;
+  slot: number;
+  chamber: string;
+  minSizeNm: number;
+  geometry: { waferRadius: number; dieSize: number; edgeBand: number; centerBand: number };
+  dies: { col: number; row: number; x: number; y: number; good: boolean; killers: number }[];
+  defects: WaferDefect[];
+  signatures: WaferSignature[];
+  stats: WaferStats;
+  pareto: Partial<Record<DefectClass, number>>;
 }

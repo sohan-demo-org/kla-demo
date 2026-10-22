@@ -5,6 +5,7 @@ import { z } from 'zod';
 import { heroSlides, investors, jobs, leaders, milestones, news, products, services } from './data.js';
 import type { Store } from './db.js';
 import type { SearchResult } from './types.js';
+import { inspectionTools, lotDetail, lotExists, lotList, parseMinSize, signatureTypes, waferDetail } from './yield.js';
 
 const contactSchema = z.object({
   name: z.string().trim().min(1, 'Name is required'),
@@ -24,6 +25,14 @@ const applicationSchema = z.object({
 
 const subscriptionSchema = z.object({ email: z.string().trim().email('A valid email is required') });
 const statusSchema = z.object({ status: z.enum(['New', 'In Progress', 'Closed']) });
+const excursionSchema = z.object({
+  lotId: z.string().trim().refine(lotExists, 'Unknown lot'),
+  slots: z.array(z.number().int().min(1).max(25)).min(1, 'Select at least one wafer').transform((s) => [...new Set(s)].sort((a, b) => a - b)),
+  signature: z.enum(signatureTypes as [string, ...string[]]),
+  owner: z.string().trim().min(1, 'Owner is required'),
+  note: z.string().trim().max(500, 'Keep the note under 500 characters').optional().nullable(),
+});
+const excursionStatusSchema = z.object({ status: z.enum(['Open', 'Contained', 'Closed']) });
 
 function validationError(res: Response, error: z.ZodError) {
   res.status(400).json({
@@ -180,20 +189,66 @@ export function createApp(store: Store, options: { staticDir?: string } = {}) {
     res.status(created ? 201 : 200).json({ ...subscription, created });
   });
 
+  app.get('/api/yield/tools', (_req, res) => {
+    res.json(inspectionTools);
+  });
+
+  app.get('/api/yield/lots', (req, res) => {
+    res.json(lotList(parseMinSize(req.query.minSize)));
+  });
+
+  app.get('/api/yield/lots/:id', (req, res) => {
+    const lot = lotDetail(req.params.id, parseMinSize(req.query.minSize));
+    if (!lot) {
+      res.status(404).json({ error: 'Lot not found' });
+      return;
+    }
+    res.json({ ...lot, excursions: store.listExcursions(lot.id) });
+  });
+
+  app.get('/api/yield/lots/:id/wafers/:slot', (req, res) => {
+    const wafer = waferDetail(req.params.id, Number(req.params.slot), parseMinSize(req.query.minSize));
+    if (!wafer) {
+      res.status(404).json({ error: 'Wafer not found' });
+      return;
+    }
+    res.json(wafer);
+  });
+
+  app.post('/api/yield/excursions', (req, res) => {
+    const parsed = excursionSchema.safeParse(req.body);
+    if (!parsed.success) return validationError(res, parsed.error);
+    res.status(201).json(store.addExcursion({ ...parsed.data, note: parsed.data.note || null }));
+  });
+
+  app.patch('/api/yield/excursions/:id', (req, res) => {
+    const parsed = excursionStatusSchema.safeParse(req.body);
+    if (!parsed.success) return validationError(res, parsed.error);
+    const updated = store.updateExcursionStatus(Number(req.params.id), parsed.data.status);
+    if (!updated) {
+      res.status(404).json({ error: 'Excursion not found' });
+      return;
+    }
+    res.json(updated);
+  });
+
   app.get('/api/admin/summary', (_req, res) => {
     const inquiries = store.listContactRequests();
     const applications = store.listApplications();
     const subscriptions = store.listSubscriptions();
+    const excursions = store.listExcursions();
     res.json({
       counts: {
         inquiries: inquiries.length,
         openInquiries: inquiries.filter((i) => i.status !== 'Closed').length,
         applications: applications.length,
         subscriptions: subscriptions.length,
+        openExcursions: excursions.filter((e) => e.status !== 'Closed').length,
       },
       inquiries,
       applications,
       subscriptions,
+      excursions,
     });
   });
 
