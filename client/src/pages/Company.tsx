@@ -1,3 +1,5 @@
+import { useEffect } from 'react';
+import { useLocation } from 'react-router-dom';
 import { useApi } from '../api';
 import PageHeader from '../components/PageHeader';
 import { ErrorNotice } from '../components/StateMessage';
@@ -12,6 +14,11 @@ const values = [
 
 export default function Company() {
   const { data, error } = useApi<CompanyPayload>('/company');
+  const { hash } = useLocation();
+
+  useEffect(() => {
+    if (data && hash) document.getElementById(hash.slice(1))?.scrollIntoView();
+  }, [data, hash]);
 
   return (
     <>

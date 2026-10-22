@@ -33,7 +33,8 @@ export default function JobDetail() {
       setSubmitted(await apiPost<Application>(`/careers/${id}/applications`, form));
       setForm(empty);
     } catch (err) {
-      setErrors(issuesByField(err));
+      const fieldErrors = issuesByField(err);
+      setErrors(Object.keys(fieldErrors).length ? fieldErrors : { form: (err as Error).message });
     } finally {
       setSubmitting(false);
     }
@@ -92,6 +93,7 @@ export default function JobDetail() {
                 <textarea id="coverLetter" rows={5} value={form.coverLetter} onChange={(e) => setForm({ ...form, coverLetter: e.target.value })} className="input" />
                 {errors.coverLetter && <p className="field-error">{errors.coverLetter}</p>}
               </div>
+              {errors.form && <p className="field-error">{errors.form}</p>}
               <button type="submit" disabled={submitting} className="btn-primary w-full">
                 {submitting ? 'Submitting…' : 'Submit application'}
               </button>
